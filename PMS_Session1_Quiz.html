@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMS Session 1 Quiz</title>
+<style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #eef5f5; padding: 20px; color: #12343b; margin: 0; }
+    .container { max-width: 850px; margin: 20px auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .header-box { text-align: center; border-bottom: 2px solid #0f8b8d; margin-bottom: 30px; padding-bottom: 10px; }
+    .header-box h1 { color: #12343b; margin-bottom: 4px; }
+    .header-box h3 { color: #4a5a63; font-weight: normal; margin-top: 4px; }
+
+    #name-screen, #quiz-area, #result { display: none; }
+
+    .btn-primary { background-color: #0f8b8d; color: white; padding: 15px 60px; border: none; border-radius: 30px; font-size: 18px; cursor: pointer; font-weight: bold; }
+    .btn-primary:focus-visible, #submit-btn:focus-visible, input[type="text"]:focus-visible { outline: 3px solid #f28f3b; outline-offset: 2px; }
+    input[type="text"] { width: 80%; max-width: 480px; padding: 15px; border: 2px solid #cfe3e0; border-radius: 8px; font-size: 18px; margin-bottom: 20px; box-sizing: border-box; }
+
+    #timer { position: fixed; top: 20px; right: 20px; background: #0b6e70; color: white; padding: 12px 25px; border-radius: 50px; font-weight: bold; font-size: 22px; z-index: 1000; }
+    #timer.low { background: #d93025; }
+    .question { margin-bottom: 30px; padding: 25px; border-left: 6px solid #0f8b8d; background: #f7fbfb; border-radius: 8px; }
+    .question p { font-weight: 600; line-height: 1.5; margin-top: 0; }
+    .options label { display: block; margin: 12px 0; padding: 14px; cursor: pointer; background: white; border: 1px solid #cfe3e0; border-radius: 10px; line-height: 1.4; }
+    .options label:hover { border-color: #0f8b8d; }
+    .options label:has(input:checked) { border-color: #0f8b8d; background: #e4f4f2; }
+
+    #submit-btn { width: 100%; padding: 20px; background: #f28f3b; color: #12343b; border: none; border-radius: 10px; font-size: 22px; cursor: pointer; font-weight: bold; }
+
+    .review-item { margin-bottom: 15px; padding: 15px; border-radius: 8px; border-width: 1px; border-style: solid; }
+    .correct-review { background: #f0fff4; border-color: #68d391; }
+    .wrong-review { background: #fff5f5; border-color: #feb2b2; }
+    .status-badge { font-weight: bold; text-transform: uppercase; font-size: 12px; padding: 4px 10px; border-radius: 4px; margin-bottom: 8px; display: inline-block; }
+    .badge-correct { background: #c6f6d5; color: #22543d; }
+    .badge-wrong { background: #fed7d7; color: #822727; }
+    .why { margin-top: 8px; color: #4a5a63; font-size: 14px; }
+    .score-box { font-size: 60px; font-weight: bold; color: #0f8b8d; text-align: center; }
+
+    @media (max-width: 600px) {
+        .container { padding: 20px; }
+        #timer { top: 10px; right: 10px; font-size: 18px; padding: 8px 16px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-box">
+        <h1>PMS Session 1 Quiz</h1>
+        <h3>Foundations, the PMS Cycle, KPIs &amp; Rating Scales</h3>
+    </div>
+
+    <!-- Start -->
+    <div id="start-screen" style="text-align: center;">
+        <p>Total MCQs: 12 | Marks: 12 | Time: 15 Mins</p>
+        <button class="btn-primary" onclick="showNameScreen()">Start Quiz</button>
+    </div>
+
+    <!-- Name Input -->
+    <div id="name-screen" style="text-align: center;">
+        <h2>Student Name</h2>
+        <input type="text" id="studentNameInput" placeholder="Enter Full Name">
+        <br>
+        <button class="btn-primary" onclick="startQuiz()">Begin Test</button>
+    </div>
+
+    <!-- Quiz -->
+    <div id="quiz-area">
+        <div id="timer">15:00</div>
+        <div id="questions-container"></div>
+        <button type="button" id="submit-btn" onclick="submitClicked()">Submit Test</button>
+    </div>
+
+    <!-- Results -->
+    <div id="result">
+        <h2 id="displayName" style="text-align: center;"></h2>
+        <div class="score-box" id="final-score"></div>
+        <p id="percentage" style="text-align: center; font-weight: bold;"></p>
+
+        <div style="margin-top: 40px;">
+            <h3 style="text-align: center;">Attempt Review</h3>
+            <div id="full-review-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Each item: [question, correct answer, options, short explanation]
+    const questionsData = [
+        ["Which statement best describes the difference between performance management and performance appraisal?",
+         "Appraisal is one evaluation event within a year-round performance management process",
+         ["Appraisal is the continuous process and performance management is the yearly event", "Appraisal is one evaluation event within a year-round performance management process", "They mean the same thing in practice", "Performance management applies only to managers; appraisal applies to workers"],
+         "Performance management runs all year (goals, coaching, review, reward). Appraisal is only the evaluation step."],
+
+        ["A cement company cascades its cost-per-tonne target down to kiln availability and shift energy use. Which PMS purpose does this illustrate?",
+         "Alignment",
+         ["Development", "Alignment", "Reward differentiation", "Recognition only"],
+         "Alignment means company strategy is cascaded into departmental and individual goals."],
+
+        ["What is the central tension between the development and reward purposes of a PMS?",
+         "Employees hide weaknesses if pay is at stake",
+         ["Employees ask for too much training", "Managers refuse to set stretch targets", "Employees hide weaknesses if pay is at stake", "Rewards are always paid before ratings are set"],
+         "Honest talk about weaknesses (development) is discouraged when the same conversation decides pay (reward)."],
+
+        ["How do many firms ease this tension?",
+         "By separating a development conversation (mid-year, no ratings) from a reward conversation (year-end)",
+         ["By abolishing ratings entirely", "By holding one meeting that covers both purposes", "By separating a development conversation (mid-year, no ratings) from a reward conversation (year-end)", "By letting employees set their own ratings"],
+         "Splitting the conversations lets mid-year feedback stay candid, while year-end ratings drive rewards."],
+
+        ["At which stage of the PMS cycle should 4–7 KPIs, weights and targets be agreed in writing?",
+         "Goal setting, in month one",
+         ["Year-end appraisal", "Goal setting, in month one", "Rating and calibration", "Reward decision"],
+         "Goal setting opens the cycle; late or unwritten targets (e.g. issued in April) weaken everything after."],
+
+        ["What is the main purpose of the mid-year review?",
+         "To check progress, adjust targets for external shocks and agree support",
+         ["To announce final ratings", "To decide bonuses", "To check progress, adjust targets for external shocks and agree support", "To place employees on a PIP"],
+         "The mid-year review is a checkpoint (e.g. for gas outages or floods), usually unrated or provisionally rated."],
+
+        ["In SMART KPIs, what does 'Measurable' require?",
+         "A number, a unit and a data source",
+         ["A deadline or period", "A number, a unit and a data source", "Alignment with company strategy", "Agreement from the employee's peers"],
+         "Measurable means you can verify it, e.g. CSAT of at least 85% from the post-call survey in the CRM."],
+
+        ["Which of the following is the most SMART KPI?",
+         "Reduce cutting-room fabric wastage from 6.5% to 5.0% by 31 December, using the monthly cutting-efficiency report",
+         ["Reduce wastage", "Be more careful with fabric", "Reduce cutting-room fabric wastage from 6.5% to 5.0% by 31 December, using the monthly cutting-efficiency report", "Try to improve cutting efficiency this year"],
+         "It is specific, measurable (6.5% to 5.0%, with a source), time-bound (31 December) and relevant to the role."],
+
+        ["FMCG sales staff sell through distributors. Which KPI should be added to a revenue target to avoid pushing stock onto the channel?",
+         "A collections or overdue-receivables KPI",
+         ["A collections or overdue-receivables KPI", "Number of team lunches held", "Employee attendance only", "Total hours worked"],
+         "Revenue alone can be inflated by channel loading; collection days balance it."],
+
+        ["What makes a BARS (Behaviourally Anchored Rating Scale) more defensible than a plain 5-point scale?",
+         "Each rating is anchored to observable behaviours rather than adjectives",
+         ["It has more points than other scales", "It removes the need for manager judgement", "Each rating is anchored to observable behaviours rather than adjectives", "It uses only numeric data"],
+         "Anchors describe what you can see, which reduces subjectivity and gives evidence if a rating is challenged."],
+
+        ["A manager's ratings are dominated by the employee's last two months of work. Which rating error is this?",
+         "Recency error",
+         ["Halo effect", "Horn effect", "Recency error", "Central tendency"],
+         "The antidote is a performance log and mid-year notes covering the whole year."],
+
+        ["A manager gives nearly everyone 4 or 5 to avoid conflict and protect relationships (lihaaz). Which rating error is this?",
+         "Leniency",
+         ["Leniency", "Recency", "Similar-to-me bias", "Central tendency"],
+         "Leniency pushes ratings up (central tendency pushes everyone to 3). Calibration is a key control."]
+    ];
+
+    // Paste your Google Apps Script Web App URL here to record results (leave empty to skip)
+    const GOOGLE_SHEET_URL = "";
+
+    const TOTAL = questionsData.length;
+    let studentName = "";
+    let timeLeft = 15 * 60;
+    let timerInterval;
+    let finished = false;
+    let order = []; // option order per question (shuffled each attempt)
+
+    function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function escapeHTML(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function sendToGoogleSheet(name, score, total) {
+        if (!GOOGLE_SHEET_URL) { return; }
+        const payload = new URLSearchParams();
+        payload.append("name", name);
+        payload.append("score", score);
+        payload.append("total", total);
+        payload.append("quiz", "PMS Session 1 (Foundations, Cycle, KPIs & Rating Scales)");
+        payload.append("date", new Date().toLocaleString());
+        fetch(GOOGLE_SHEET_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: payload.toString()
+        }).catch(err => console.error("Sheet submission failed:", err));
+    }
+
+    function showNameScreen() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('name-screen').style.display = 'block';
+    }
+
+    function startQuiz() {
+        studentName = document.getElementById('studentNameInput').value;
+        if (!studentName.trim()) { alert("Please enter your name."); return; }
+        document.getElementById('name-screen').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'block';
+        renderQuestions();
+        startTimer();
+    }
+
+    function renderQuestions() {
+        const container = document.getElementById('questions-container');
+        let html = '';
+        questionsData.forEach((item, index) => {
+            order[index] = shuffle(item[2].map((_, i) => i));
+            let optionsHTML = '';
+            order[index].forEach(optIdx => {
+                optionsHTML += `<label><input type="radio" name="q${index}" value="${optIdx}"> ${escapeHTML(item[2][optIdx])}</label>`;
+            });
+            html += `<div class="question"><p>Q${index + 1}: ${escapeHTML(item[0])}</p><div class="options">${optionsHTML}</div></div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function startTimer() {
+        updateTimer();
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimer();
+            if (timeLeft <= 0) calculateScore();
+        }, 1000);
+    }
+
+    function updateTimer() {
+        const t = Math.max(timeLeft, 0);
+        const mins = Math.floor(t / 60);
+        const secs = t % 60;
+        const el = document.getElementById('timer');
+        el.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        el.classList.toggle('low', t <= 120);
+    }
+
+    function submitClicked() {
+        const unanswered = questionsData.filter((_, i) => !document.querySelector(`input[name="q${i}"]:checked`)).length;
+        if (unanswered > 0 && !confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) return;
+        calculateScore();
+    }
+
+    function calculateScore() {
+        if (finished) return;
+        finished = true;
+        clearInterval(timerInterval);
+        let score = 0;
+        let reviewHTML = "";
+
+        questionsData.forEach((item, index) => {
+            const selected = document.querySelector(`input[name="q${index}"]:checked`);
+            const userAnswer = selected ? item[2][parseInt(selected.value, 10)] : "Not Attempted";
+            const isCorrect = (userAnswer === item[1]);
+            if (isCorrect) score++;
+
+            reviewHTML += `
+                <div class="review-item ${isCorrect ? 'correct-review' : 'wrong-review'}">
+                    <span class="status-badge ${isCorrect ? 'badge-correct' : 'badge-wrong'}">${isCorrect ? 'Correct' : 'Wrong'}</span>
+                    <div style="font-weight: bold; margin-bottom: 5px;">Question ${index + 1}: ${escapeHTML(item[0])}</div>
+                    <div>Your Choice: <span style="font-weight: bold; color: ${isCorrect ? '#2f855a' : '#c53030'};">${escapeHTML(userAnswer)}</span></div>
+                    ${isCorrect ? '' : `<div>Correct Answer: <span style="font-weight: bold; color: #2f855a;">${escapeHTML(item[1])}</span></div>`}
+                    <div class="why">${escapeHTML(item[3])}</div>
+                </div>`;
+        });
+
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('displayName').innerText = studentName;
+        document.getElementById('final-score').innerText = `${score} / ${TOTAL}`;
+        document.getElementById('percentage').innerText = `Result: ${(score / TOTAL * 100).toFixed(0)}%`;
+        document.getElementById('full-review-list').innerHTML = reviewHTML;
+        window.scrollTo(0, 0);
+
+        sendToGoogleSheet(studentName, score, TOTAL);
+    }
+</script>
+
+</body>
+</html>
